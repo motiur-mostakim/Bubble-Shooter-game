@@ -89,12 +89,12 @@ class BubbleQuestGame extends FlameGame with PanDetector, TapCallbacks {
   }
 
   @override
-  void onGameResize(Vector2 newSize) {
-    super.onGameResize(newSize);
+  void onGameResize(Vector2 size) {
+    super.onGameResize(size);
     if (isLoaded) {
       _updateLayoutDimensions();
-      final cannonY = newSize.y - max(85.0, newSize.y * 0.13);
-      cannon.position = Vector2(newSize.x / 2.0, cannonY);
+      final cannonY = size.y - max(85.0, size.y * 0.13);
+      cannon.position = Vector2(size.x / 2.0, cannonY);
     }
   }
 
@@ -153,7 +153,7 @@ class BubbleQuestGame extends FlameGame with PanDetector, TapCallbacks {
         final spritePath = bColor.getThemeSpriteAssetPath(activeTheme.id);
         final sprite = await Sprite.load(spritePath);
         bubbleSprites[bColor] = sprite;
-      } catch (e) {
+      } catch (_) {
         // Fallback drawing handles missing sprites gracefully
       }
     }
@@ -165,36 +165,36 @@ class BubbleQuestGame extends FlameGame with PanDetector, TapCallbacks {
         bubbleSprites[BubbleColor.lightning] = specSprite;
         bubbleSprites[BubbleColor.stone] = specSprite;
         bubbleSprites[BubbleColor.ice] = specSprite;
-      } catch (e) {}
+      } catch (_) {}
     }
 
     if (activeTheme.rainbowBubbleAsset != null) {
       try {
         final rainbowSprite = await Sprite.load(activeTheme.rainbowBubbleAsset!);
         bubbleSprites[BubbleColor.rainbow] = rainbowSprite;
-      } catch (e) {}
+      } catch (_) {}
     }
 
     try {
       final baseAsset = activeTheme.cannonBaseAsset ?? 'game/shooter/shooter_base.png';
       cannonBaseSprite = await Sprite.load(baseAsset);
-    } catch (e) {}
+    } catch (_) {}
 
     try {
       final readyAsset = activeTheme.readyBubbleAsset ?? 'game/shooter/shooter_clover.png';
       shooterCloverSprite = await Sprite.load(readyAsset);
-    } catch (e) {}
+    } catch (_) {}
 
     try {
       final aimAsset = activeTheme.aimDotAsset ?? 'game/effects/aim_dot.png';
       aimDotSprite = await Sprite.load(aimAsset);
-    } catch (e) {}
+    } catch (_) {}
 
     try {
       popEffectSprite = await Sprite.load('game/effects/bubble_pop.png');
       sparkleSprite = await Sprite.load('game/effects/sparkle.png');
       explosionSprite = await Sprite.load('game/effects/explosion.png');
-    } catch (e) {}
+    } catch (_) {}
   }
 
   BubbleColor _randomPaletteColor() {

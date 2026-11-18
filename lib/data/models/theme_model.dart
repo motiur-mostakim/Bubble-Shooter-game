@@ -28,6 +28,14 @@ class ThemeModel {
   final String? rainbowBubbleAsset;
   final String? aimDotAsset;
 
+  /// When true the game draws glossy canvas bubbles instead of loading
+  /// per-colour sprite sheets. Used by the illustrated jungle theme.
+  final bool useProceduralBubbles;
+
+  /// Visual style of the launcher. 'standard' draws the metal barrel,
+  /// 'carrot' draws the illustrated carrot pot from the jungle theme.
+  final String cannonStyle;
+
   const ThemeModel({
     required this.id,
     required this.name,
