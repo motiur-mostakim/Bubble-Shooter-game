@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../data/models/bubble_type.dart';
 import '../../../data/repositories/player_repository.dart';
 import '../../../data/static_data/levels_data.dart';
+import '../../../data/static_data/themes_data.dart';
 import 'game_event.dart';
 import 'game_state.dart';
 
@@ -81,6 +82,17 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     final previousScore = updatedScores[currentLevel] ?? 0;
     updatedScores[currentLevel] = max(previousScore, event.score);
 
+    final availableThemes = ThemesData.themes
+        .where((theme) =>
+            player.unlockedThemes.contains(theme.id) || theme.isDefault)
+        .toList();
+    final currentThemeIndex = availableThemes.indexWhere(
+      (theme) => theme.id == player.selectedTheme,
+    );
+    final nextTheme = availableThemes.isEmpty
+        ? player.selectedTheme
+        : availableThemes[(currentThemeIndex + 1) % availableThemes.length].id;
+
     final nextLevel = max(player.currentLevel, currentLevel + 1);
 
     // Check unlocking worlds (e.g. world 2 unlocks at level 6, world 3 at 11, etc.)
@@ -96,6 +108,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       levelStars: updatedStars,
       levelScores: updatedScores,
       unlockedWorlds: unlockedWorlds,
+      selectedTheme: nextTheme,
     );
 
     await playerRepository.savePlayer(updatedPlayer);

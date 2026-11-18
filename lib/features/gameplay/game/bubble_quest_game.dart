@@ -68,11 +68,12 @@ class BubbleQuestGame extends FlameGame with PanDetector, TapCallbacks {
     required this.onStateChanged,
     required this.onLevelWon,
     required this.onLevelLost,
-  }) : activeTheme = activeTheme ??
-            ThemesData.themes.firstWhere(
-              (t) => t.primaryColor == themeColor,
-              orElse: () => ThemesData.themes.first,
-            );
+  }) : activeTheme =
+           activeTheme ??
+           ThemesData.themes.firstWhere(
+             (t) => t.primaryColor == themeColor,
+             orElse: () => ThemesData.themes.first,
+           );
 
   @override
   Color backgroundColor() => Colors.transparent;
@@ -170,18 +171,22 @@ class BubbleQuestGame extends FlameGame with PanDetector, TapCallbacks {
 
     if (activeTheme.rainbowBubbleAsset != null) {
       try {
-        final rainbowSprite = await Sprite.load(activeTheme.rainbowBubbleAsset!);
+        final rainbowSprite = await Sprite.load(
+          activeTheme.rainbowBubbleAsset!,
+        );
         bubbleSprites[BubbleColor.rainbow] = rainbowSprite;
       } catch (_) {}
     }
 
     try {
-      final baseAsset = activeTheme.cannonBaseAsset ?? 'game/shooter/shooter_base.png';
+      final baseAsset =
+          activeTheme.cannonBaseAsset ?? 'game/shooter/shooter_base.png';
       cannonBaseSprite = await Sprite.load(baseAsset);
     } catch (_) {}
 
     try {
-      final readyAsset = activeTheme.readyBubbleAsset ?? 'game/shooter/shooter_clover.png';
+      final readyAsset =
+          activeTheme.readyBubbleAsset ?? 'game/shooter/shooter_clover.png';
       shooterCloverSprite = await Sprite.load(readyAsset);
     } catch (_) {}
 
@@ -199,8 +204,9 @@ class BubbleQuestGame extends FlameGame with PanDetector, TapCallbacks {
 
   BubbleColor _randomPaletteColor() {
     if (levelConfig.availableColors.isEmpty) return BubbleColor.red;
-    return levelConfig
-        .availableColors[_rng.nextInt(levelConfig.availableColors.length)];
+    return levelConfig.availableColors[_rng.nextInt(
+      levelConfig.availableColors.length,
+    )];
   }
 
   void _setupGrid() {
@@ -248,13 +254,13 @@ class BubbleQuestGame extends FlameGame with PanDetector, TapCallbacks {
   @override
   void onPanStart(DragStartInfo info) {
     if (isShooting || isGameOver) return;
-    _updateAimAngle(info.eventPosition.global);
+    _updateAimAngle(info.eventPosition.widget);
   }
 
   @override
   void onPanUpdate(DragUpdateInfo info) {
     if (isShooting || isGameOver) return;
-    _updateAimAngle(info.eventPosition.global);
+    _updateAimAngle(info.eventPosition.widget);
   }
 
   @override
@@ -300,10 +306,13 @@ class BubbleQuestGame extends FlameGame with PanDetector, TapCallbacks {
 
     final cannonPos = cannon.position;
     final speed = 800.0;
-    shooterVelocity = Vector2(cos(cannon.aimAngle), sin(cannon.aimAngle)) * speed;
+    shooterVelocity =
+        Vector2(cos(cannon.aimAngle), sin(cannon.aimAngle)) * speed;
 
     Sprite? shotSprite = bubbleSprites[readyColor];
-    if (readyColor == BubbleColor.green && shooterCloverSprite != null && activeTheme.id == 'green_forest') {
+    if (readyColor == BubbleColor.green &&
+        shooterCloverSprite != null &&
+        activeTheme.id == 'green_forest') {
       shotSprite = shooterCloverSprite;
     }
 
@@ -331,6 +340,7 @@ class BubbleQuestGame extends FlameGame with PanDetector, TapCallbacks {
   void _updateShooterPhysics(double dt) {
     final shooter = activeShooter!;
     final radius = bubbleDiameter / 2;
+    final previousPosition = shooter.position.clone();
     shooter.position += shooterVelocity * dt;
 
     // 1. Side wall bounces
@@ -346,32 +356,98 @@ class BubbleQuestGame extends FlameGame with PanDetector, TapCallbacks {
     bool hitCeiling = shooter.position.y <= topY + radius;
 
     // 3. Grid bubble collision
-    bool hitBubble = false;
+    final hitBubbles = <BubbleComponent>[];
     gridMap.forEach((_, b) {
       if (!b.isPopping && !b.isFalling) {
-        final distSq = (shooter.position - b.position).length2;
-        if (distSq <= (bubbleDiameter * 0.88) * (bubbleDiameter * 0.88)) {
-          hitBubble = true;
+        final segment = shooter.position - previousPosition;
+        final segmentLengthSq = segment.length2;
+        final projection = (b.position - previousPosition).dot(segment);
+        final t = segmentLengthSq == 0
+            ? 0.0
+            : (projection / segmentLengthSq).clamp(0.0, 1.0).toDouble();
+        final closestPoint = previousPosition + segment * t;
+        final contactDistance = (shooter.position - b.position).length;
+        final sweptDistance = (closestPoint - b.position).length;
+        if (min(contactDistance, sweptDistance) <= bubbleDiameter) {
+          hitBubbles.add(b);
         }
       }
     });
 
-    if (hitCeiling || hitBubble) {
-      _onShooterCollided();
+    if (hitCeiling || hitBubbles.isNotEmpty) {
+      _onShooterCollided(hitBubbles: hitBubbles);
     }
   }
 
-  void _onShooterCollided() {
+  void _onShooterCollided({required List<BubbleComponent> hitBubbles}) {
     final shooter = activeShooter!;
 
-    // Find nearest hex grid position
-    final (row, col) = HexGridHelper.getNearestGridPosition(
-      posX: shooter.position.x,
-      posY: shooter.position.y,
-      startX: startX,
-      startY: topY,
-      bubbleDiameter: bubbleDiameter,
+    // Place the shot in an empty cell touching the bubbles it hit. Never
+    // overwrite an existing bubble when two grid centers are nearly tied.
+    final candidates = <(int, int)>{};
+    if (shooter.position.y <= topY + bubbleDiameter / 2) {
+      for (var col = 0; col < HexGridHelper.evenRowCols; col++) {
+        candidates.add((0, col));
+      }
+    }
+    for (final bubble in hitBubbles) {
+      final entry = gridMap.entries.firstWhere(
+        (entry) => identical(entry.value, bubble),
+      );
+      final parts = entry.key.split('_');
+      final row = int.parse(parts[0]);
+      final col = int.parse(parts[1]);
+      candidates.addAll(HexGridHelper.getNeighbors(row, col));
+    }
+    candidates.removeWhere(
+      (cell) => gridMap.containsKey('${cell.$1}_${cell.$2}'),
     );
+
+    if (candidates.isEmpty) {
+      for (var row = 0; row < HexGridHelper.maxRows; row++) {
+        for (var col = 0; col < HexGridHelper.getColsForRow(row); col++) {
+          if (!gridMap.containsKey('${row}_$col')) candidates.add((row, col));
+        }
+      }
+    }
+
+    if (candidates.isEmpty) {
+      shooter.removeFromParent();
+      activeShooter = null;
+      isShooting = false;
+      isGameOver = true;
+      onLevelLost();
+      return;
+    }
+
+    final landingCell = candidates.reduce((best, candidate) {
+      final bestCenter = HexGridHelper.getBubbleCenter(
+        row: best.$1,
+        col: best.$2,
+        startX: startX,
+        startY: topY,
+        bubbleDiameter: bubbleDiameter,
+      );
+      final candidateCenter = HexGridHelper.getBubbleCenter(
+        row: candidate.$1,
+        col: candidate.$2,
+        startX: startX,
+        startY: topY,
+        bubbleDiameter: bubbleDiameter,
+      );
+      final bestDistance =
+          (bestCenter.x - shooter.position.x) *
+              (bestCenter.x - shooter.position.x) +
+          (bestCenter.y - shooter.position.y) *
+              (bestCenter.y - shooter.position.y);
+      final candidateDistance =
+          (candidateCenter.x - shooter.position.x) *
+              (candidateCenter.x - shooter.position.x) +
+          (candidateCenter.y - shooter.position.y) *
+              (candidateCenter.y - shooter.position.y);
+      return candidateDistance < bestDistance ? candidate : best;
+    });
+    final (row, col) = landingCell;
 
     final center = HexGridHelper.getBubbleCenter(
       row: row,
@@ -391,12 +467,18 @@ class BubbleQuestGame extends FlameGame with PanDetector, TapCallbacks {
     onStateChanged(currentScore, remainingMoves);
 
     // Matching logic
-    final gridModelMap = gridMap.map(
-      (k, b) => MapEntry(
-        k,
-        BubbleModel(id: k, row: b.position.y ~/ 1, col: b.position.x ~/ 1, color: b.color),
-      ),
-    );
+    final gridModelMap = gridMap.map((key, bubble) {
+      final parts = key.split('_');
+      return MapEntry(
+        key,
+        BubbleModel(
+          id: key,
+          row: int.parse(parts[0]),
+          col: int.parse(parts[1]),
+          color: bubble.color,
+        ),
+      );
+    });
 
     final matchedModels = BubbleMatcher.findMatches(
       gridMap: gridModelMap,
@@ -425,10 +507,12 @@ class BubbleQuestGame extends FlameGame with PanDetector, TapCallbacks {
 
       AudioService.instance.playPop();
 
-      add(ScorePopupComponent(
-        text: '+$popScore',
-        position: Vector2(center.x, center.y),
-      ));
+      add(
+        ScorePopupComponent(
+          text: '+$popScore',
+          position: Vector2(center.x, center.y),
+        ),
+      );
 
       // Floating bubbles check
       final remainingModelMap = gridMap.map(
@@ -443,8 +527,9 @@ class BubbleQuestGame extends FlameGame with PanDetector, TapCallbacks {
         ),
       );
 
-      final floatingModels =
-          FloatingBubbleDetector.findFloatingBubbles(remainingModelMap);
+      final floatingModels = FloatingBubbleDetector.findFloatingBubbles(
+        remainingModelMap,
+      );
 
       if (floatingModels.isNotEmpty) {
         int dropScore = floatingModels.length * 200;
@@ -460,11 +545,13 @@ class BubbleQuestGame extends FlameGame with PanDetector, TapCallbacks {
 
         AudioService.instance.playCombo();
 
-        add(ScorePopupComponent(
-          text: 'BONUS +$dropScore',
-          position: Vector2(center.x, center.y - 30),
-          textColor: Colors.orangeAccent,
-        ));
+        add(
+          ScorePopupComponent(
+            text: 'BONUS +$dropScore',
+            position: Vector2(center.x, center.y - 30),
+            textColor: Colors.orangeAccent,
+          ),
+        );
       }
     }
 

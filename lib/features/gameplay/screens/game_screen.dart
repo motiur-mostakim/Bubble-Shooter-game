@@ -57,29 +57,37 @@ class _GameScreenState extends State<GameScreen> {
             );
           }
 
-          final selectedThemeId = state.playerData.selectedTheme;
+          // Keep the completed level's environment behind its result dialog.
+          // Apply the next theme when a new game is created.
+          final selectedThemeId = state.status == GameStatus.won && _game != null
+              ? _game!.activeTheme.id
+              : state.playerData.selectedTheme;
           final activeTheme = ThemesData.themes.firstWhere(
             (t) => t.id == selectedThemeId,
             orElse: () => ThemesData.themes.first,
           );
 
-          _game ??= BubbleQuestGame(
-            levelConfig: state.levelConfig!,
-            activeTheme: activeTheme,
-            onStateChanged: (score, moves) {
-              context
-                  .read<GameBloc>()
-                  .add(UpdateGameStateEvent(score, moves));
-            },
-            onLevelWon: (finalScore, stars) {
-              context
-                  .read<GameBloc>()
-                  .add(LevelWonEvent(finalScore, stars));
-            },
-            onLevelLost: () {
-              context.read<GameBloc>().add(const LevelLostEvent());
-            },
-          );
+          if (_game == null ||
+              _game!.levelConfig.id != state.levelConfig!.id ||
+              _game!.activeTheme.id != activeTheme.id) {
+            _game = BubbleQuestGame(
+              levelConfig: state.levelConfig!,
+              activeTheme: activeTheme,
+              onStateChanged: (score, moves) {
+                context
+                    .read<GameBloc>()
+                    .add(UpdateGameStateEvent(score, moves));
+              },
+              onLevelWon: (finalScore, stars) {
+                context
+                    .read<GameBloc>()
+                    .add(LevelWonEvent(finalScore, stars));
+              },
+              onLevelLost: () {
+                context.read<GameBloc>().add(const LevelLostEvent());
+              },
+            );
+          }
 
           return Scaffold(
             body: ThemeEnvironmentWidget(
