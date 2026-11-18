@@ -438,4 +438,9 @@ if __name__ == '__main__':
     build_galaxy()
     build_fairy()
     build_winter()
+    try:
+        import generate_reference_portrait_backgrounds
+        generate_reference_portrait_backgrounds.main()
+    except Exception as e:
+        print(f"Warning: Could not run generate_reference_portrait_backgrounds: {e}")
     print("ALL 36 THEME ASSETS GENERATED SUCCESSFULLY!")

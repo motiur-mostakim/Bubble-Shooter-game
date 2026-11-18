@@ -16,8 +16,10 @@ class ThemeModel {
   final List<Color> gradientBackground;
   final Color cannonColor;
   final Color accentColor;
-  final String particleType; // 'leaf', 'bubble', 'sparkle', 'star', 'firefly', 'snowflake'
-  final String bubbleSkinType; // 'forest', 'ocean', 'candy', 'galaxy', 'fairy', 'winter'
+  final String
+  particleType; // 'leaf', 'bubble', 'sparkle', 'star', 'firefly', 'snowflake'
+  final String
+  bubbleSkinType; // 'forest', 'ocean', 'candy', 'galaxy', 'fairy', 'winter'
   final List<Color> particleColors;
   final int unlockCostCoins;
   final int unlockCostGems;
@@ -63,5 +65,7 @@ class ThemeModel {
     this.specialBubbleAsset,
     this.rainbowBubbleAsset,
     this.aimDotAsset,
+    this.useProceduralBubbles = false,
+    this.cannonStyle = 'standard',
   });
 }

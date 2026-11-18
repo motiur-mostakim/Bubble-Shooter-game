@@ -27,10 +27,10 @@ class ThemeEnvironmentWidget extends StatelessWidget {
         return Stack(
           fit: StackFit.expand,
           children: [
-            // Layer 1: Base Environment Sky Background
+            // Layer 1: Base Environment Background Artwork (Exact 390x844 Portrait Target)
             Image.asset(
               theme.skyAsset,
-              fit: BoxFit.cover,
+              fit: BoxFit.fill,
               width: double.infinity,
               height: double.infinity,
               errorBuilder: (context, error, stackTrace) => Container(
@@ -44,77 +44,82 @@ class ThemeEnvironmentWidget extends StatelessWidget {
               ),
             ),
 
-            // Layer 2: Distant Scenery (Clouds / Mountain silhouettes)
-            IgnorePointer(
-              child: Image.asset(
-                theme.distantAsset,
-                fit: BoxFit.cover,
-                width: double.infinity,
-                height: double.infinity,
-                errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
-              ),
-            ),
-
-            // Layer 3: Midground Scenery (Mountains / Water lake / Midground trees)
-            IgnorePointer(
-              child: Image.asset(
-                theme.midgroundAsset,
-                fit: BoxFit.cover,
-                width: double.infinity,
-                height: double.infinity,
-                errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
-              ),
-            ),
-
-            // Layer 4a: Left Side Decoration (Temple pillars / Hanging foliage)
-            Positioned(
-              left: 0,
-              top: 0,
-              bottom: bottomDecorHeight * 0.5,
-              width: sideDecorWidth,
-              child: IgnorePointer(
+            // Layer 2: Distant Scenery (Only rendered if asset path provided)
+            if (theme.distantAsset.isNotEmpty)
+              IgnorePointer(
                 child: Image.asset(
-                  theme.leftDecorationAsset,
-                  fit: BoxFit.fill,
-                  alignment: Alignment.topLeft,
+                  theme.distantAsset,
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: double.infinity,
                   errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
                 ),
               ),
-            ),
 
-            // Layer 4b: Right Side Decoration
-            Positioned(
-              right: 0,
-              top: 0,
-              bottom: bottomDecorHeight * 0.5,
-              width: sideDecorWidth,
-              child: IgnorePointer(
+            // Layer 3: Midground Scenery (Only rendered if asset path provided)
+            if (theme.midgroundAsset.isNotEmpty)
+              IgnorePointer(
                 child: Image.asset(
-                  theme.rightDecorationAsset,
-                  fit: BoxFit.fill,
-                  alignment: Alignment.topRight,
+                  theme.midgroundAsset,
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: double.infinity,
                   errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
                 ),
               ),
-            ),
+
+            // Layer 4a: Left Side Decoration (Only rendered if asset path provided)
+            if (theme.leftDecorationAsset.isNotEmpty)
+              Positioned(
+                left: 0,
+                top: 0,
+                bottom: bottomDecorHeight * 0.5,
+                width: sideDecorWidth,
+                child: IgnorePointer(
+                  child: Image.asset(
+                    theme.leftDecorationAsset,
+                    fit: BoxFit.fill,
+                    alignment: Alignment.topLeft,
+                    errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+                  ),
+                ),
+              ),
+
+            // Layer 4b: Right Side Decoration (Only rendered if asset path provided)
+            if (theme.rightDecorationAsset.isNotEmpty)
+              Positioned(
+                right: 0,
+                top: 0,
+                bottom: bottomDecorHeight * 0.5,
+                width: sideDecorWidth,
+                child: IgnorePointer(
+                  child: Image.asset(
+                    theme.rightDecorationAsset,
+                    fit: BoxFit.fill,
+                    alignment: Alignment.topRight,
+                    errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+                  ),
+                ),
+              ),
 
             // Layer 5: Bubble Gameplay Area (Flame Game canvas)
             child,
 
-            // Layer 6: Foreground Bottom Decoration (Stone platform, grass ground, seabed)
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              height: bottomDecorHeight,
-              child: IgnorePointer(
-                child: Image.asset(
-                  theme.bottomDecorationAsset,
-                  fit: BoxFit.fill,
-                  errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+            // Layer 6: Foreground Bottom Decoration (Only rendered if asset path provided)
+            if (theme.bottomDecorationAsset.isNotEmpty)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                height: bottomDecorHeight,
+                child: IgnorePointer(
+                  child: Image.asset(
+                    theme.bottomDecorationAsset,
+                    fit: BoxFit.fill,
+                    errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+                  ),
                 ),
               ),
-            ),
 
             // Layer 7: Animated Environmental Particles (Leaves, sparkles, fireflies, snow)
             IgnorePointer(

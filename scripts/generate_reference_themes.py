@@ -499,3 +499,8 @@ def build_green_forest():
 if __name__ == '__main__':
     build_fantasy_temple()
     build_green_forest()
+    try:
+        import generate_reference_portrait_backgrounds
+        generate_reference_portrait_backgrounds.main()
+    except Exception as e:
+        print(f"Warning: Could not run generate_reference_portrait_backgrounds: {e}")

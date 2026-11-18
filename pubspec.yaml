@@ -66,6 +66,8 @@ flutter:
     - assets/game/shooter/
     - assets/game/effects/
     - assets/game/decorations/
+    - assets/game/themes/clover_forest/background/
+    - assets/game/themes/underwater/background/
     - assets/themes/fantasy_temple/background/
     - assets/themes/fantasy_temple/decorations/
     - assets/themes/fantasy_temple/bubbles/
